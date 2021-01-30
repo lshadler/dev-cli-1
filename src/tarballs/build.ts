@@ -1,6 +1,7 @@
 import {ArchTypes, PlatformTypes} from '@oclif/config'
 import * as Errors from '@oclif/errors'
 import * as findYarnWorkspaceRoot from 'find-yarn-workspace-root'
+import * as fs from 'fs'
 import * as path from 'path'
 import * as qq from 'qqjs'
 
@@ -53,10 +54,26 @@ export async function build(c: IConfig, options: {
   }
   const addDependencies = async () => {
     qq.cd(c.workspace())
+    console.log(c.workspace())
     const yarnRoot = findYarnWorkspaceRoot(c.root) || c.root
     const yarn = await qq.exists([yarnRoot, 'yarn.lock'])
     if (yarn) {
       await qq.cp([yarnRoot, 'yarn.lock'], '.')
+      let neededOclifDeps: Array<string> = []
+      const pkg = require(path.join(yarnRoot, 'package.json'))
+      if (pkg && pkg.dependencies) {
+        neededOclifDeps = Object.keys(pkg.dependencies).filter(key =>
+          key.startsWith('@oclif/'))
+        pkg.dependencies = neededOclifDeps.reduce((r, n) => ({...r, [n]: pkg.dependencies[n]}), {})
+      }
+
+      delete pkg.devDependencies
+
+      fs.writeFileSync(`${c.workspace()}/package.json`, JSON.stringify(pkg, null, 2))
+
+      // console.log(`yarn add --produ-D -E ${neededOclifDeps.map(d => `${d}@${pkg.dependencies[d]}`).join(' ')}`)
+
+      // await qq.x(`yarn add -D -E ${neededOclifDeps.map(d => `${d}@${pkg.dependencies[d]}`).join(' ')}`)
       await qq.x('yarn --no-progress --production --non-interactive')
     } else {
       let lockpath = qq.join(c.root, 'package-lock.json')
