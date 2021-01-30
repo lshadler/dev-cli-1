@@ -15,6 +15,7 @@ const TARGETS = [
 // eslint-disable-next-line @typescript-eslint/interface-name-prefix
 export interface IConfig {
   root: string;
+  prune: boolean;
   gitSha: string;
   config: Config.IConfig;
   nodeVersion: string;
@@ -56,7 +57,7 @@ async function Tmp(config: Config.IConfig) {
   return tmp
 }
 
-export async function buildConfig(root: string, options: {xz?: boolean; targets?: string[]} = {}): Promise<IConfig> {
+export async function buildConfig(root: string, options: {xz?: boolean; targets?: string[]; prune?: boolean} = {}): Promise<IConfig> {
   const config = await Config.load({root: path.resolve(root), devPlugins: false, userPlugins: false})
   const channel = config.channel
   root = config.root
@@ -83,6 +84,7 @@ export async function buildConfig(root: string, options: {xz?: boolean; targets?
       if (target && target.platform) return qq.join(base, [target.platform, target.arch].join('-'), config.s3Key('baseDir', target))
       return qq.join(base, config.s3Key('baseDir', target))
     },
+    prune: options.prune || false,
     targets: compact(options.targets || updateConfig.node.targets || TARGETS).map(t => {
       const [platform, arch] = t.split('-') as [Config.PlatformTypes, Config.ArchTypes]
       return {platform, arch}

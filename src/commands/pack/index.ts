@@ -13,6 +13,7 @@ This can be used to create oclif CLIs that use the system node or that come prel
     root: flags.string({char: 'r', description: 'path to oclif CLI root', default: '.', required: true}),
     targets: flags.string({char: 't', description: 'comma-separated targets to pack (e.g.: linux-arm,win32-x64)'}),
     xz: flags.boolean({description: 'also build xz', allowNo: true}),
+    prune: flags.boolean({description: 'EXPERIMENTAL: If true, only ships OClif dependencies so the commands can be bundled with @oclif deps externalized', default: false}),
   }
 
   async run() {
@@ -20,7 +21,7 @@ This can be used to create oclif CLIs that use the system node or that come prel
     if (process.platform === 'win32') throw new Error('pack does not function on windows')
     const {flags} = this.parse(Pack)
     const targets = flags.targets ? flags.targets.split(',') : undefined
-    const buildConfig = await Tarballs.buildConfig(flags.root, {xz: flags.xz, targets})
+    const buildConfig = await Tarballs.buildConfig(flags.root, {xz: flags.xz, targets, prune: flags.prune})
     await Tarballs.build(buildConfig)
     qq.cd(prevCwd)
   }
